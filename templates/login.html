@@ -1,0 +1,35 @@
+{% extends "_layout.html %}
+
+{% block content %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post" name="login-form" id="login-form" class="form-horizontal">
+                <fieldset>
+
+                    <legend>Login...</legend>
+
+                        <div class="form-group">
+                            <label for="username">Password</label>
+                            <input type="password" class="form-control" id="username" placeholder="Username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" class="form-control" id="password" placeholder="Password">
+                        </div>
+
+                  </fieldset>
+
+
+                    <!-- form actions -->
+                    <button type="submit" form="login-form" class="btn btn-lg btn-primary">
+                        <i class="fa fa-sign-in"></i> Login
+                    </button>
+
+                </fieldset>
+            </form>
+        </div>
+    </div>
+
+{% endblock %}
