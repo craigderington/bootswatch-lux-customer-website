@@ -22,6 +22,8 @@ class User(Base):
     changed_on = Column(DateTime, default=datetime.now, nullable=True)
     created_by_fk = Column(Integer)
     changed_by_fk = Column(Integer)
+    store_id = Column(Integer, ForeignKey('stores.id'), nullable=False)
+    store = relationship('Store')
 
     def __init__(self, username, password):
         self.username = username

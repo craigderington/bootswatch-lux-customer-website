@@ -30,15 +30,12 @@ app.config['MONGO_SERVER'] = config.MONGO_SERVER
 app.config['MONGO_DB'] = config.MONGO_DB
 
 # Flask-Mail configuration
-app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = 'craigderington17@gmail.com'
-
-# config mail
-mail = Mail(app)
+app.config['MAIL_USERNAME'] = config.MAIL_USERNAME
+app.config['MAIL_PASSWORD'] = config.MAIL_PASSWORD
+app.config['MAIL_DEFAULT_SENDER'] = config.MAIL_DEFAULT_SENDER
 
 # SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
@@ -54,8 +51,13 @@ login_manager.login_view = "/login"
 app.url_map.strict_slashes = False
 
 # Celery config
-app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
-app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+app.config['CELERY_BROKER_URL'] = config.CELERY_BROKER_URL
+app.config['CELERY_RESULT_BACKEND'] = config.CELERY_RESULT_BACKEND
+
+# Config mail
+mail = Mail(app)
+
+# Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
 
@@ -70,7 +72,7 @@ def shutdown_session(exception=None):
 @login_manager.user_loader
 def load_user(id):
     try:
-        return db_session.query(User).get(int(id))
+        return db_session.query(User).get_id(int(id))
     except exc.SQLAlchemyError as err:
         return None
 
@@ -196,6 +198,25 @@ def reports():
     )
 
 
+def send_email(to, subject, **kwargs):
+    """
+    Send Mail function
+    :param to:
+    :param subject:
+    :param template:
+    :param kwargs:
+    :return: celery async task id
+    """
+    msg = Message(
+        subject,
+        sender=app.config['MAIL_DEFAULT_SENDER'],
+        recipients=[to, ]
+    )
+    msg.body = "EARL Dealer Demo UI Test"
+    # msg.html = render_template(template + '.html', **kwargs)
+    send_async_email.delay(msg)
+
+
 @app.route('/longtask', methods=['POST'])
 def longtask():
     task = long_task.apply_async()
@@ -221,7 +242,7 @@ def login():
             flash('Username or password is invalid!  Please try again...')
             return redirect(url_for('login'))
 
-        # login the user and redirect
+        # login the user and redirect, note the next param
         login_user(user)
         flash('You have been logged in successfully...', 'success')
         return redirect(request.args.get('next') or url_for('index'))
@@ -237,7 +258,7 @@ def login():
 def logout():
     logout_user()
     flash('You have been logged out successfully', category='success')
-    return redirect(url_for('login'))
+    return redirect(url_for('index'))
 
 
 @app.errorhandler(404)
@@ -267,17 +288,6 @@ def get_dashboard():
 
     dashboard = {}
     return dashboard
-
-
-def get_store_name(store_pk_id):
-    """
-    Return the store name for the logged in user
-    :param store_pk_id:
-    :return: str
-    """
-    store = db_session.query(Store).get(store_pk_id)
-    store_name = str(store.name).encode('utf-8')
-    return store_name
 
 
 def get_date():
