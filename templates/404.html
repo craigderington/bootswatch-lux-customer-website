@@ -1,0 +1,18 @@
+{% extends "_layout.html" %}
+{% block page_header %}<h5>Oh, Snap!  That's a 404...</h5>{% endblock %}
+
+{% block content %}
+    <div class="bs-component">
+        <div class="jumbotron">
+            <h1 class="display-3">Error 404</h1>
+                <p class="lead">We are so sorry..., but the requested page could not be found on this server.</p>
+                <hr class="my-4">
+                <p>Maybe something broke or that page got removed.  We're not sure.  In the mean time, please use the button below to navigate away from this little error page.</p>
+                <p class="lead">
+                    <a class="btn btn-primary btn-lg" href="{{ url_for('index') }}" role="button">
+                        <i class="fa fa-home"></i> Take Me Home, James!
+                    </a>
+                </p>
+        </div>
+    </div>
+{% endblock %}

@@ -1,16 +1,20 @@
-from flask import Flask, make_response, redirect, request, Response, render_template, url_for, flash, g
+from flask import Flask, make_response, redirect, request, Response, render_template, url_for, flash, g, jsonify
 from flask_sslify import SSLify
 from flask_login import LoginManager, login_required, login_user, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy, Pagination
+from flask_mail import Mail, Message
 from sqlalchemy import text, and_, exc, func
 from database import db_session
 from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor, Lead
 from forms import UserLoginForm
+from celery import Celery
 import config
 import datetime
 import hashlib
-import pymongo
 import phonenumbers
+import random
+import time
+import os
 
 
 # debug
@@ -25,14 +29,21 @@ app.secret_key = config.SECRET_KEY
 app.config['MONGO_SERVER'] = config.MONGO_SERVER
 app.config['MONGO_DB'] = config.MONGO_DB
 
+# Flask-Mail configuration
+app.config['MAIL_SERVER'] = 'smtp.googlemail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = 'craigderington17@gmail.com'
+
+# config mail
+mail = Mail(app)
+
 # SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = config.SQLALCHEMY_DATABASE_URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICATIONS
 db = SQLAlchemy(app)
-
-# Mongo DB
-mongo_client = pymongo.MongoClient(app.config['MONGO_SERVER'], 27017, connect=False)
-mongo_db = mongo_client[app.config['MONGO_DB']]
 
 # define our login_manager
 login_manager = LoginManager(app)
@@ -41,6 +52,12 @@ login_manager.login_view = "/login"
 
 # disable strict slashes
 app.url_map.strict_slashes = False
+
+# Celery config
+app.config['CELERY_BROKER_URL'] = 'redis://localhost:6379/0'
+app.config['CELERY_RESULT_BACKEND'] = 'redis://localhost:6379/0'
+celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
+celery.conf.update(app.config)
 
 
 # clear all db sessions at the end of each request
@@ -62,6 +79,35 @@ def load_user(id):
 @app.before_request
 def before_request():
     g.user = current_user
+
+
+# tasks sections, for async functions, etc...
+@celery.task
+def send_async_email(msg):
+    """Background task to send an email with Flask-Mail."""
+    with app.app_context():
+        mail.send(msg)
+
+
+@celery.task(bind=True)
+def long_task(self):
+    """Background task that runs a long function with progress reports."""
+    verb = ['Starting up', 'Booting', 'Repairing', 'Loading', 'Checking']
+    adjective = ['master', 'radiant', 'silent', 'harmonic', 'fast']
+    noun = ['solar array', 'particle reshaper', 'cosmic ray', 'orbiter', 'bit']
+    message = ''
+    total = random.randint(10, 50)
+    for i in range(total):
+        if not message or random.random() < 0.25:
+            message = '{0} {1} {2}...'.format(random.choice(verb),
+                                              random.choice(adjective),
+                                              random.choice(noun))
+        self.update_state(state='PROGRESS',
+                          meta={'current': i, 'total': total,
+                                'status': message})
+        time.sleep(1)
+    return {'current': 100, 'total': 100, 'status': 'Task completed!',
+            'result': 42}
 
 
 # default routes
@@ -150,6 +196,13 @@ def reports():
     )
 
 
+@app.route('/longtask', methods=['POST'])
+def longtask():
+    task = long_task.apply_async()
+    return jsonify({}), 202, {'Location': url_for('taskstatus',
+                                                  task_id=task.id)}
+
+
 @app.route("/login", methods=['GET', 'POST'])
 def login():
 
@@ -189,12 +242,12 @@ def logout():
 
 @app.errorhandler(404)
 def page_not_found(err):
-    return render_template('error-404.html'), 404
+    return render_template('404.html'), 404
 
 
 @app.errorhandler(500)
 def internal_server_error(err):
-    return render_template('error-500.html'), 500
+    return render_template('500.html'), 500
 
 
 def flash_errors(form):
@@ -217,13 +270,21 @@ def get_dashboard():
 
 
 def get_store_name(store_pk_id):
+    """
+    Return the store name for the logged in user
+    :param store_pk_id:
+    :return: str
+    """
     store = db_session.query(Store).get(store_pk_id)
     store_name = str(store.name).encode('utf-8')
     return store_name
 
 
 def get_date():
-    # set the current date time for each page
+    """
+    Set the datetime stamp for the layout template context
+    :return: datetime str
+    """
     today = datetime.datetime.now().strftime('%c')
     return '{}'.format(today)
 
