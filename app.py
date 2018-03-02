@@ -53,13 +53,14 @@ app.url_map.strict_slashes = False
 # Celery config
 app.config['CELERY_BROKER_URL'] = config.CELERY_BROKER_URL
 app.config['CELERY_RESULT_BACKEND'] = config.CELERY_RESULT_BACKEND
-
-# Config mail
-mail = Mail(app)
+app.config['CELERY_ACCEPT_CONTENT'] = config.CELERY_ACCEPT_CONTENT
 
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
+
+# Config mail
+mail = Mail(app)
 
 
 # clear all db sessions at the end of each request
