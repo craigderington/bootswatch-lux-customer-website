@@ -26,8 +26,8 @@ sslify = SSLify(app)
 
 # app config
 app.secret_key = config.SECRET_KEY
-app.config['MONGO_SERVER'] = config.MONGO_SERVER
-app.config['MONGO_DB'] = config.MONGO_DB
+# app.config['MONGO_SERVER'] = config.MONGO_SERVER
+# app.config['MONGO_DB'] = config.MONGO_DB
 
 # Flask-Mail configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -54,7 +54,7 @@ app.url_map.strict_slashes = False
 app.config['CELERY_BROKER_URL'] = config.CELERY_BROKER_URL
 app.config['CELERY_RESULT_BACKEND'] = config.CELERY_RESULT_BACKEND
 app.config['CELERY_ACCEPT_CONTENT'] = config.CELERY_ACCEPT_CONTENT
-
+app.config.update(accept_content=['json', 'pickle'])
 # Initialize Celery
 celery = Celery(app.name, broker=app.config['CELERY_BROKER_URL'])
 celery.conf.update(app.config)
@@ -85,7 +85,7 @@ def before_request():
 
 
 # tasks sections, for async functions, etc...
-@celery.task
+@celery.task(serializer='pickle')
 def send_async_email(msg):
     """Background task to send an email with Flask-Mail."""
     with app.app_context():
