@@ -4,8 +4,8 @@
         <div class="page-header mb-10" id="banner">
             <div class="row">
                 <div class="col-lg-8 col-md-7 col-sm-6">
-                    <h1>Welcome, Craig James</h1>
-                    <p class="lead">North Miami Beach Maserati</p>
+                    <h1>Welcome, {{ current_user.first_name }} {{ current_user.last_name }}</h1>
+                    <p class="lead">{{ store_name }}</p>
                 </div>
             </div>
         </div>
