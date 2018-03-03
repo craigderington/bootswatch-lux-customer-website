@@ -45,7 +45,9 @@ db = SQLAlchemy(app)
 # define our login_manager
 login_manager = LoginManager(app)
 login_manager.init_app(app)
-login_manager.login_view = "/login"
+login_manager.login_view = "/auth/login"
+login_manager.login_message = "Login required to access this site."
+login_manager.login_message_category = "primary"
 
 # disable strict slashes
 app.url_map.strict_slashes = False
@@ -73,7 +75,7 @@ def shutdown_session(exception=None):
 @login_manager.user_loader
 def load_user(id):
     try:
-        return db_session.query(User).get_id(int(id))
+        return db_session.query(User).get(int(id))
     except exc.SQLAlchemyError as err:
         return None
 
@@ -116,7 +118,7 @@ def long_task(self):
 # default routes
 @app.route('/', methods=['GET'])
 @app.route('/index', methods=['GET'])
-#@login_required
+@login_required
 def index():
     """
     The Dashboard View (Default)
@@ -127,65 +129,84 @@ def index():
         'index.html',
         current_user=current_user,
         dashboard=get_dashboard(),
+        store_name=get_store_name(current_user.store_id),
         today=get_date()
     )
 
 
 @app.route('/campaigns', methods=['GET'])
-#@login_required
+@login_required
 def campaigns():
     """
     Campaign View
     :return: list campaigns
     """
+    archived_count = 0
 
     # get the list of their stores campaigns
-    campaigns = []
+    campaigns = db_session.query(Campaign).filter(
+        Campaign.store_id == current_user.store_id,
+        Campaign.status == 'ACTIVE'
+    ).all()
+
+    archived_campaigns = db_session.query(Campaign).filter(
+        Campaign.store_id == current_user.store_id,
+        Campaign.status == 'INACTIVE'
+    ).count()
 
     return render_template(
         'campaigns.html',
         current_user=current_user,
         campaigns=campaigns,
+        archived_count=archived_campaigns,
+        store_name=get_store_name(current_user.store_id),
         today=get_date()
     )
 
 
-@app.route('/visitors', methods=['GET'])
-#@login_required
-def visitors():
+@app.route('/campaign/<int:campaign_pk_id>', methods=['GET'])
+@login_required
+def campaign_detail(campaign_pk_id):
     """
-    The Campaign Visitor View
+    The Campaign Detail View
     :return: databoxes
     """
     visitors = []
+    leads = []
+    sends = []
 
-    return render_template(
-        'visitors.html',
-        current_user=current_user,
-        visitors=visitors,
-        today=get_date()
-    )
+    campaign = db_session.query(Campaign).filter(
+        Campaign.store_id == current_user.store_id,
+        Campaign.id == campaign_pk_id
+    ).one()
 
+    if not campaign:
 
-@app.route('/leads', methods=['GET'])
-#@login_required
-def leads():
-    """
-    The Campaign Lead View
-    :return: list leads
-    """
+        # this campaign may not belong to this user
+        # redirect and flash a message
+        flash('Unauthorized Access.', category='primary')
+        return redirect(url_for('index'))
+
+    visitors = db_session.query(Visitor).filter(
+        Visitor.campaign_id == campaign.id,
+        Visitor.store_id == current_user.store_id
+    ).order_by(Visitor.created_date.desc()).all()
+
     leads = []
 
     return render_template(
-        'leads.html',
+        'campaign_detail.html',
         current_user=current_user,
+        campaign=campaign,
+        visitors=visitors,
         leads=leads,
+        store_name=get_store_name(current_user.store_id),
         today=get_date()
     )
 
 
 @app.route('/reports', methods=['GET'])
-#@login_required
+@login_required
 def reports():
     """
     The Campaign Report View
@@ -225,7 +246,16 @@ def longtask():
                                                   task_id=task.id)}
 
 
-@app.route("/login", methods=['GET', 'POST'])
+@app.route('/login', methods=['GET'])
+def login_redirect():
+    """
+    Redirect to auth/login
+    :return: redirect
+    """
+    return redirect('/auth/login', 302)
+
+
+@app.route("/auth/login", methods=['GET', 'POST'])
 def login():
 
     form = UserLoginForm()
@@ -245,7 +275,7 @@ def login():
 
         # login the user and redirect, note the next param
         login_user(user)
-        flash('You have been logged in successfully...', 'success')
+        flash('You have been logged in successfully...', 'primary')
         return redirect(request.args.get('next') or url_for('index'))
 
     return render_template(
@@ -258,7 +288,6 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out successfully', category='success')
     return redirect(url_for('index'))
 
 
@@ -286,9 +315,40 @@ def get_dashboard():
     Get the dashboard data
     :return: dict
     """
+    campaign_count = 0
+    visitor_count = 0
 
-    dashboard = {}
+    campaign_count = db_session.query(Campaign).filter(
+        Campaign.store_id == current_user.store_id,
+        Campaign.status == 'ACTIVE'
+    ).count()
+
+    visitor_count = db_session.query(Visitor).filter(
+        Visitor.store_id == current_user.store_id
+    ).count()
+
+    # create dashboard dict
+    dashboard = {
+        'campaigns': campaign_count,
+        'visitors': visitor_count
+    }
+
+    # return the dashboard object
     return dashboard
+
+
+def get_store_name(store_pk_id):
+    """
+    Get the name of the store for the
+    app and dashboard welcome message
+    :param store_pk_id:
+    :return: str store_name
+    """
+    store_name = db_session.query(Store).filter(
+        Store.id == store_pk_id
+    ).one()
+
+    return str(store_name)
 
 
 def get_date():

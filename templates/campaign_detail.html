@@ -1,0 +1,75 @@
+{% extends "_layout.html" %}
+{% block title %}{{ store_name }} Campaign Detail &raquo; {{ campaign.name }}{% endblock%}
+{% block error_messages %}{% endblock %}
+
+    {% block page_header %}
+        <div class="page-header mb-10" id="banner">
+                <div class="row">
+                    <div class="col-lg-12 col-md-6 col-sm-6">
+                        <h3><i class="fa fa-th-list"></i> {{ campaign.name }} Details
+                            <span class="pull-right">
+                                <small class="text-default">Dates: {{ campaign.start_date|datemdy }} to {{ campaign.end_date|datemdy }}</small>
+                            </span>
+                        </h3>
+                        <p class="lead">{{ store_name }}<br />Type: {{ campaign.campaign_type }}<br />Job: {{ campaign.job_number }}</p>
+                    </div>
+                </div>
+            </div>
+    {% endblock %}
+
+
+    {% block content %}
+        <div class="row">
+            <div class="col-lg-3">
+                <ul class="list-group">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Visitors
+                        <span class="badge badge-primary badge-pill">4655</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Leads
+                        <span class="badge badge-primary badge-pill">2680</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Follow Up Emails
+                        <span class="badge badge-primary badge-pill">2482</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Ringless VMs
+                        <span class="badge badge-primary badge-pill">928</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-lg-9">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th scope="col">Visitor Date</th>
+                            <th scope="col">Visitor IP Address</th>
+                            <th scope="col">Job Number</th>
+                            <th scope="col">Country Code</th>
+                            <th scope="col">Region</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visitor in visitors %}
+                            <tr>
+                                <td>{{ visitor.created_date }}</td>
+                                <td>{{ visitor.ip }}</td>
+                                <td>{{ visitor.job_number }}</td>
+                                <td>{{ visitor.country_code }}</td>
+                                <td>{{ visitor.region }}</td>
+                                <td>{{ visitor.status }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% endblock %}
+
+
+{% block js %}
+    {{ super() }}
+{% endblock %}

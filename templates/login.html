@@ -1,45 +1,64 @@
 {% extends "_layout.html" %}
-{% block page_header %}
-    <h3 class="small">
-        <i class="fa fa-user-secret"></i> Please Sign In...
-    </h3>
-{% endblock %}
-
-{% block content %}
-
-    <div class="row">
-        <div class="col-lg-8">
-
-            <!-- form errors -->
-            {% for error in form.errors %}
-                <div class="alert alert-dismissible alert-danger">
-                    <button type="button" class="close" data-dismiss="alert">&times;</button>
-                    <strong>Oh snap!</strong> {{ error }}
-                </div>
-            {% endfor %}
-
-            <form method="post" name="login-form" id="login-form" class="form-horizontal">
-                {{ form.hidden_tag() }}
-                <fieldset>
-
-                    <div class="form-group">
-                        <label for="username"><small>Username</small></label>
-                        <input type="password" class="form-control" name="username" id="username" placeholder="Enter Your Username">
+{% block title %}EARL Digital Plus &raquo; Dealer Login{% endblock %}
+    {% block error_messages %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-dismissible alert-{{ category }}">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <i class="fa fa-warning"></i> {{ message }}
                     </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    {% endblock %}
 
-                    <div class="form-group">
-                        <label for="password"><small>Password</small></label>
-                        <input type="password" class="form-control" name="password" id="password" placeholder="Enter Your Password">
+    {% block page_header %}
+        <h3 class="small">
+            <i class="fa fa-user-secret"></i> Please Sign In...
+        </h3>
+    {% endblock %}
+
+    {% block content %}
+
+        <div class="row">
+            <div class="col-lg-8">
+
+                <!-- form errors -->
+                {% for error in form.errors %}
+                    <div class="alert alert-dismissible alert-danger">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <i class="fa fa-warning"></i> {{ error }}
                     </div>
+                {% endfor %}
 
-                    <!-- form actions -->
-                    <button type="submit" form="login-form" class="btn btn-md btn-primary">
-                        <i class="fa fa-sign-in"></i> Login
-                    </button>
+                <form method="post" name="login-form" id="login-form" class="form-horizontal">
+                    {{ form.hidden_tag() }}
+                    <fieldset>
 
-                </fieldset>
-            </form>
+                        <div class="form-group">
+                            <label for="username"><small>USERNAME</small></label>
+                            <input type="password" class="form-control" name="username" id="username" placeholder="Enter Your Username">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password"><small>PASSWORD</small></label>
+                            <input type="password" class="form-control" name="password" id="password" placeholder="Enter Your Password">
+                        </div>
+
+                        <!-- form actions -->
+                        <button type="submit" form="login-form" class="btn btn-md btn-primary">
+                            <i class="fa fa-sign-in"></i> Login
+                        </button>
+
+                    </fieldset>
+                </form>
+            </div>
         </div>
-    </div>
 
-{% endblock %}
+    {% endblock %}
+
+
+    {% block js %}
+        {{ super() }}
+    {% endblock %}

@@ -1,10 +1,25 @@
 {% extends "_layout.html" %}
 
+    {% block error_messages %}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-dismissible alert-{{ category }}">
+                        <button type="button" class="close" data-dismiss="alert">&times;</button>
+                        <i class="fa fa-warning"></i> {{ message }}
+                    </div>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+    {% endblock %}
+
     {% block page_header %}
         <div class="page-header mb-10" id="banner">
             <div class="row">
-                <div class="col-lg-8 col-md-7 col-sm-6">
-                    <h1>Welcome, {{ current_user.first_name }} {{ current_user.last_name }}</h1>
+                <div class="col-lg-12 col-md-6 col-sm-6">
+                    <h3>Welcome, {{ current_user.first_name }} {{ current_user.last_name }}</h3>
+                    <span class="pull-right text-default text-small">{{ today }}</span>
                     <p class="lead">{{ store_name }}</p>
                 </div>
             </div>
@@ -15,40 +30,41 @@
 
     {% block content %}
         <!-- begin: row1 -->
+
         <div class="row">
             <div class="col-lg-3">
-                <div class="card text-white bg-primary mb-3" style="max-width: 20rem;">
+                <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
                     <div class="card-header">Campaigns</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Active Campaigns</h4>
+                        <p class="card-text"><h1>{{ dashboard.campaigns }}</h1></p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-3">
-                <div class="card text-white bg-success mb-3" style="max-width: 20rem;">
-                    <div class="card-header">Settings</div>
-                    <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-3">
-                <div class="card text-white bg-info mb-3" style="max-width: 20rem;">
+                <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
                     <div class="card-header">Visitors</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Total<br/>Visitors</h4>
+                        <p class="card-text"><h1>{{ dashboard.visitors }}</h1></p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-3">
-                <div class="card bg-light mb-3" style="max-width: 20rem;">
+                <div class="card text-dark bg-default mb-3" style="max-width: 20rem;">
                     <div class="card-header">Leads</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Total Conversions</h4>
+                        <p class="card-text"><h1>2680</h1></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3">
+                <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
+                    <div class="card-header">Emails Sent</div>
+                    <div class="card-body">
+                        <h4 class="card-title">Total Emails Sent</h4>
+                        <p class="card-text"><h1>2680</h1></p>
                     </div>
                 </div>
             </div>
@@ -57,38 +73,38 @@
         <!-- begin: row2 -->
         <div class="row">
             <div class="col-lg-3">
-                <div class="card text-white bg-warning mb-3" style="max-width: 20rem;">
-                    <div class="card-header">Conversions</div>
+                <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
+                    <div class="card-header">Ringless Voicemail</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Total Delivered</h4>
+                        <p class="card-text"><h1>928</h1></p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-3">
                 <div class="card text-white bg-danger mb-3" style="max-width: 20rem;">
-                    <div class="card-header">Impact</div>
+                    <div class="card-header">Campaign Impact</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">How We Helped?</h4>
+                        <p class="card-text">This campaign reached {{ dashboard.visitor_count }} and converted {{ dashboard.lead_count }}.  That is a conversion rate of X%.</p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-3">
-                <div class="card border-primary mb-3" style="max-width: 20rem;">
+                <div class="card text-white bg-primary mb-3" style="max-width: 20rem;">
                     <div class="card-header">Charts</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Visualize Your Data</h4>
+                        <p class="card-text">Some nice fancy charts of your data.  If you're into that kind of thing. </p>
                     </div>
                 </div>
             </div>
             <div class="col-lg-3">
-                <div class="card border-secondary mb-3" style="max-width: 20rem;">
+                <div class="card text-white bg-info mb-3" style="max-width: 20rem;">
                     <div class="card-header">Data & Reports</div>
                     <div class="card-body">
-                        <h4 class="card-title">Primary card title</h4>
-                        <p class="card-text">Some quick example text to build on the card title and make up the bulk of the card's content.</p>
+                        <h4 class="card-title">Export Raw Data</h4>
+                        <p class="card-text">Export your data to common formats for easy import into CRMs. View raw data.</p>
                     </div>
                 </div>
             </div>
