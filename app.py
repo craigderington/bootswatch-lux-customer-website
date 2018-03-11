@@ -6,7 +6,7 @@ from flask_mail import Mail, Message
 from sqlalchemy import text, and_, exc, func
 from database import db_session
 from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor, Lead
-from forms import UserLoginForm
+from forms import UserLoginForm, DailyRecapForm
 from celery import Celery
 import config
 import datetime
@@ -116,7 +116,7 @@ def long_task(self):
 
 
 # default routes
-@app.route('/', methods=['GET'])
+# @app.route('/', methods=['GET'])
 @app.route('/index', methods=['GET'])
 @login_required
 def index():
@@ -144,15 +144,20 @@ def campaigns():
     archived_count = 0
 
     # get the list of their stores campaigns
-    campaigns = db_session.query(Campaign).filter(
-        Campaign.store_id == current_user.store_id,
-        Campaign.status == 'ACTIVE'
-    ).all()
+    try:
+        campaigns = db_session.query(Campaign).filter(
+            Campaign.store_id == current_user.store_id,
+            Campaign.status == 'ACTIVE'
+        ).all()
 
-    archived_campaigns = db_session.query(Campaign).filter(
-        Campaign.store_id == current_user.store_id,
-        Campaign.status == 'INACTIVE'
-    ).count()
+        archived_campaigns = db_session.query(Campaign).filter(
+            Campaign.store_id == current_user.store_id,
+            Campaign.status == 'INACTIVE'
+        ).count()
+
+    except exc.SQLAlchemyError as err:
+        flash(err, category='danger')
+        return redirect(url_for('index'))
 
     return render_template(
         'campaigns.html',
@@ -172,13 +177,18 @@ def campaign_detail(campaign_pk_id):
     :return: databoxes
     """
     visitors = []
+    visitor_count = 0
     leads = []
     sends = []
 
-    campaign = db_session.query(Campaign).filter(
-        Campaign.store_id == current_user.store_id,
-        Campaign.id == campaign_pk_id
-    ).one()
+    try:
+        campaign = db_session.query(Campaign).filter(
+            Campaign.store_id == current_user.store_id,
+            Campaign.id == campaign_pk_id
+        ).one()
+
+    except exc.SQLAlchemyError as err:
+        return print(str(err))
 
     if not campaign:
 
@@ -187,10 +197,18 @@ def campaign_detail(campaign_pk_id):
         flash('Unauthorized Access.', category='primary')
         return redirect(url_for('index'))
 
-    visitors = db_session.query(Visitor).filter(
-        Visitor.campaign_id == campaign.id,
-        Visitor.store_id == current_user.store_id
-    ).order_by(Visitor.created_date.desc()).all()
+    try:
+        visitors = db_session.query(Visitor).filter(
+            Visitor.campaign_id == campaign.id,
+            Visitor.store_id == current_user.store_id
+        ).order_by(Visitor.created_date.desc()).all()
+
+    except exc.SQLAlchemyError as err:
+        flash(err, category='danger')
+        return redirect(url_for('index'))
+
+    if visitors:
+        visitor_count = len(visitors)
 
     leads = []
 
@@ -201,7 +219,155 @@ def campaign_detail(campaign_pk_id):
         visitors=visitors,
         leads=leads,
         store_name=get_store_name(current_user.store_id),
-        today=get_date()
+        today=get_date(),
+        visitor_count=visitor_count
+    )
+
+
+@app.route('/campaign/<int:campaign_pk_id>/leads')
+@login_required
+def get_leads(campaign_pk_id):
+    """
+    Get the converted leads for the selected campaign
+    :param campaign_pk_id:
+    :return: list
+    """
+    leads = None
+    lead_count = 0
+    campaign = None
+    current_time = datetime.datetime.now()
+    results = None
+
+    try:
+        campaign = db_session.query(Campaign).filter(
+            Campaign.id == campaign_pk_id,
+            Campaign.store_id == current_user.store_id
+        ).one()
+
+    except exc.SQLAlchemyError as err:
+        flash(err, category='danger')
+        return redirect(url_for('index'))
+
+    if campaign:
+        stmt = text('select v.id, av.first_name, av.last_name, av.email, av.home_phone, av.credit_range, '
+                    'av.car_year, av.car_model, av.car_make '
+                    'from visitors v, appendedvisitors av '
+                    'where v.id = av.visitor '
+                    'and v.campaign_id = {} '
+                    'order by v.id asc'.format(campaign.id))
+
+        results = db_session.query('id', 'first_name', 'last_name', 'email', 'home_phone', 'credit_range',
+                                   'car_make', 'car_year', 'car_model').from_statement(stmt).all()
+
+        if results:
+            lead_count = len(results)
+
+    return render_template(
+        'campaign_leads.html',
+        today=get_date(),
+        current_user=current_user,
+        campaign=campaign,
+        results=results,
+        lead_count=lead_count,
+        store_name=get_store_name(current_user.store_id)
+    )
+
+
+@app.route('/campaign/<int:campaign_pk_id>/emails')
+@login_required
+def get_emails(campaign_pk_id):
+    """
+    Get the emails sent to prospects for the selected campaign
+    :param campaign_pk_id:
+    :return: list
+    """
+
+    current_time = datetime.datetime.now()
+    results = None
+    email_sent_count = 0
+    campaign = None
+
+    try:
+        campaign = db_session.query(Campaign).filter(
+            Campaign.id == campaign_pk_id,
+            Campaign.store_id == current_user.store_id
+        ).one()
+
+    except exc.SQLAlchemyError as err:
+        return print(str(err))
+
+    if campaign:
+        stmt = ("select v.id, av.first_name, av.last_name, av.email, av.home_phone, l.followup_email_sent_date, "
+                "l.followup_email_receipt_id, l.followup_email_status "
+                "from visitors v, appendedvisitors av, leads l "
+                "where v.id = av.visitor "
+                "and v.campaign_id = {} "
+                "and l.followup_email_status = 'SENT' "
+                "and l.followup_email_receipt_id is not NULL "
+                "and l.followup_email_sent_date is not NULL "
+                "order by v.id asc".format(campaign.id))
+
+        results = db_session.query('id', 'first_name', 'last_name', 'email', 'home_phone', 'followup_email_sent_date',
+                                   'followup_email_receipt_id', 'followup_email_status').from_statement(stmt).all()
+
+        if results:
+            email_sent_count = len(results)
+
+    return render_template(
+        'followup_emails.html',
+        today=get_date(),
+        current_user=current_user,
+        campaign=campaign,
+        results=results,
+        email_sent_count=email_sent_count
+    )
+
+
+@app.route('/campaign/<int:campaign_pk_id>/rvms')
+@login_required
+def get_rvms(campaign_pk_id):
+    """
+    Get the list of Ringless Voicemails for the selected campaign
+    :param campaign_pk_id:
+    :return: list
+    """
+    rvm_count = 0
+    campaign = None
+
+    try:
+        campaign = db_session.query(Campaign).filter(
+            Campaign.id == campaign_pk_id,
+            Campaign.store_id == current_user.store_id
+        ).one()
+
+    except exc.SQLAlchemyError as err:
+        flash(err, category='danger')
+        return redirect(url_for('index'))
+
+    if campaign:
+        stmt = ('select v.id, av.first_name, av.last_name, av.email, av.home_phone, l.rvm_status, l.rvm_date, l.rvm_message, '
+                'l.rvm_sent '
+                'from visitors v, appendedvisitors av, leads l '
+                'where v.id = av.visitor '
+                'and v.campaign_id = {} '
+                'and l.rvm_sent = 1 '
+                'and l.rvm_date is not NULL '
+                'order by v.id asc'.format(campaign.id))
+
+        results = db_session.query('id', 'first_name', 'last_name', 'email', 'home_phone', 'rvm_status', 'rvm_date',
+                                   'rvm_message', 'rvm_sent').from_statement(stmt).all()
+
+        if results:
+            rvm_count = len(results)
+
+    return render_template(
+        'ringless_voicemail.html',
+        today=get_date(),
+        current_user=current_user,
+        store_name=get_store_name(current_user.store_id),
+        campaign=campaign,
+        rvm_count=rvm_count,
+
     )
 
 
@@ -217,6 +383,64 @@ def reports():
         'reports.html',
         current_user=current_user,
         today=get_date()
+    )
+
+
+@app.route('/reports/daily-recap-report', methods=['GET', 'POST'])
+@login_required
+def daily_recap_report():
+    """
+    Return the daily recap report for the store, by date
+    :return:
+    """
+    current_time = datetime.datetime.now()
+    form = DailyRecapForm(request.form)
+    results = None
+    start_date = None
+    end_date = None
+    results_count = 0
+    campaign_name = None
+
+    if request.method == 'POST':
+        if 'get-daily-recap' in request.form.keys() and form.validate_on_submit():
+            recap_date = form.recap_date.data
+            campaign_id = form.campaign_id.data
+            start_date = datetime.datetime.strptime(recap_date + ' 00:00:00', '%m/%d/%Y %H:%M:%S')
+            end_date = datetime.datetime.strptime(recap_date + ' 23:59:59', '%m/%d/%Y %H:%M:%S')
+
+            # raw sql statement for daily recap report
+            stmt = text("select av.created_date, av.first_name, av.last_name, av.address1, av.address2, av.city, "
+                        "av.state, av.zip_code, av.zip_4, av.email, av.cell_phone, av.credit_range, av.car_year, "
+                        "av.car_make, av.car_model "
+                        "from visitors v, appendedvisitors av "
+                        "where v.id = av.visitor "
+                        "and v.campaign_id = {} "                            
+                        "and ( v.created_date between '{}' and '{}' ) "
+                        "order by av.last_name, av.first_name asc".format(campaign_id, start_date, end_date))
+
+            # dump the query results to variable
+            results = db_session.query('created_date', 'first_name', 'last_name', 'address1', 'address2',
+                                       'city', 'state', 'zip_code', 'zip_4', 'email', 'cell_phone', 'credit_range',
+                                       'car_year', 'car_make', 'car_model').from_statement(stmt).all()
+
+            if results:
+                results_count = len(results)
+                campaign_name = db_session.query(Campaign.name).filter(
+                    Campaign.id == campaign_id
+                ).one()
+
+    return render_template(
+        'daily-recap-report.html',
+        today=current_time,
+        current_user=current_user,
+        store_name=get_store_name(current_user.store_id),
+        campaigns=get_active_campaigns(current_user.store_id),
+        results=results,
+        results_count=results_count,
+        start_date=start_date,
+        end_date=end_date,
+        form=form,
+        campaign_name=campaign_name
     )
 
 
@@ -335,6 +559,22 @@ def get_dashboard():
 
     # return the dashboard object
     return dashboard
+
+
+def get_active_campaigns(store_pk_id):
+    """
+    Get a list of active store campaigns
+    :param store_pk_id:
+    :return: list
+    """
+
+    # get a list of active store campaigns
+    campaigns = db_session.query(Campaign).filter(
+        Campaign.store_id == store_pk_id,
+        Campaign.status == 'ACTIVE'
+    ).order_by(Campaign.created_date.desc()).all()
+
+    return campaigns
 
 
 def get_store_name(store_pk_id):

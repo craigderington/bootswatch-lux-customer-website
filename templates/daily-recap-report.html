@@ -1,0 +1,153 @@
+{% extends "_layout.html" %}
+{% block title %}{{ store_name }} &raquo; Daily Recap Report{% endblock%}
+{% block head %}
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.7.1/css/bootstrap-datepicker.css">
+{% endblock %}}
+{% block section_name %}{% endblock %}
+{% block error_messages %}{% endblock %}
+
+
+    {% block page_header %}
+        {% if not results %}
+        <div class="page-header mb-10" id="banner">
+            <div class="row">
+                <div class="col-lg-12 col-md-6 col-sm-6">
+                    <h3><i class="fa fa-th-list"></i> Daily Recap Report</h3>
+                        {% for error in form.errors %}
+                            <div class="alert alert-block alert-danger">
+                                <h3><i class="fa fa-warning"></i> {{error}}</h3>
+                            </div>
+                        {% endfor %}
+                        <form class="form-inline" method="post" name="daily-recap-report-form">
+                            {{ form.hidden_tag() }}
+                            <fieldset style="margin-top: 15px;">
+                                <div class="form-group row">
+                                    <div class="col-lg-4">
+                                        <select name="campaign_id" id="campaign_id" class="form-control">
+                                            <option value="">Select Campaign</option>
+                                            {% for campaign in campaigns %}
+                                                <option value="{{ campaign.id }}">{{ campaign.id }} - {{ campaign.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-lg-5">
+                                        <label for="date-picker"></label>
+                                        <input type="text"
+                                               id="date-picker"
+                                               value="{{ today|datemdy }}"
+                                               name="recap_date"
+                                               class="form-control" />
+                                    </div>
+                                    <div class="col-lg-3">
+                                        <button type="submit"
+                                                id="daily-recap-button"
+                                                for="daily-recap-report-form"
+                                                class="btn btn-primary btn-md"
+                                                name="get-daily-recap">
+                                            <i class="fa fa-arrow-circle-right"></i>
+                                            Get Report
+                                        </button>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endblock %}
+
+
+
+    {% block content %}
+
+        {% if results %}
+
+
+            <h2><i class="fa fa-building"></i> {{ store_name }}</h2>
+            <h5>Summary: Daily Recap Report</h5>
+            <h5 class="text-danger">Report Dates: {{ start_date }} to {{ end_date }}</h5>
+            <h5>Total Appended Visitors: {{ results_count }}</h5>
+            <a href="{{ url_for('daily_recap_report') }}" class="btn btn-md btn-primary">
+                <i class="fa fa-download"></i> Reset Report
+            </a>
+
+            <span class="pull-right">
+                <a href="" class="btn btn-md btn-info disabled"><i class="fa fa-download"></i> Export to CSV</a>
+            </span>
+            <hr style="padding-bottom: 10px;">
+            <table class="table table-hover table-striped table-responsive">
+                <thead>
+                    <tr>
+                        <th>Visitor Date</th>
+                        <th>Name</th>
+                        <th>Address</th>
+                        <th>City</th>
+                        <th>State</th>
+                        <th>Zip Code</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Credit Range</th>
+                        <th>Car Year</th>
+                        <th>Car Make</th>
+                        <th>Car Model</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visitor in results %}
+                    <tr>
+                        <td>{{ visitor.created_date }}</td>
+                        <td>{{ visitor.first_name }} {{ visitor.last_name }}</td>
+                        <td>{{ visitor.address1 }}  {{ visitor.address2 }}</td>
+                        <td>{{ visitor.city }}</td>
+                        <td>{{ visitor.state.upper() }}</td>
+                        <td>{{ visitor.zip_code }} {{ visitor_zip_4 }}</td>
+                        <td>{{ visitor.email }}</td>
+                        <td>{{ visitor.cell_phone }}</td>
+                        <td>{{ visitor.credit_range }}</td>
+                        <td>{{ visitor.car_year }}</td>
+                        <td>{{ visitor.car_make }}</td>
+                        <td>{{ visitor.car_model }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+
+        {% else %}
+
+            {% if start_date %}
+                <div class="alert alert-danger alert-block">
+                    <h5 class="text-primary"><i class="fa fa-warning"></i>
+                        No data returned for the date: {{ start_date|datemdy }}
+                    </h5>
+                </div>
+            {% else %}
+                <div class="alert alert-warning alert-block">
+                    <h5 class="text-primary"><i class="fa fa-warning"></i> No campaign selected...</h5>
+                </div>
+            {% endif %}
+
+
+        {% endif %}
+
+    {% endblock %}
+
+
+
+{% block js %}
+    {{ super() }}
+    <script src="//s3.amazonaws.com/earl-admin-theme/html/assets/js/datetime/bootstrap-datepicker.js"></script>
+    <script src="//s3.amazonaws.com/earl-admin-theme/html/assets/js/datetime/moment.js"></script>
+
+    <script>
+        //-- bootstrap date range picker--
+        $('#date-picker').datepicker({
+            clearBtn: true,
+            todayBtn: true,
+            autoClose: true
+        }).on('changeDate', function (ev) {
+            $(this).datepicker('hide');
+        });
+    </script>
+{% endblock %}

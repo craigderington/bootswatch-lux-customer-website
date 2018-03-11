@@ -8,3 +8,8 @@ from sqlalchemy import text
 class UserLoginForm(FlaskForm):
     username = StringField('Username', [DataRequired()])
     password = PasswordField('Password', [DataRequired()])
+
+
+class DailyRecapForm(FlaskForm):
+    recap_date = StringField('Recap Report Date:', validators=[DataRequired()])
+    campaign_id = IntegerField('Campaign ID:', validators=[DataRequired()])

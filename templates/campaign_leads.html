@@ -1,5 +1,5 @@
 {% extends "_layout.html" %}
-{% block title %}{{ store_name }} Campaign Detail &raquo; {{ campaign.name }}{% endblock%}
+{% block title %}{{ store_name }} Campaign Converted Leads &raquo; {{ campaign.name }}{% endblock%}
 {% block error_messages %}{% endblock %}
 
     {% block page_header %}
@@ -30,12 +30,12 @@
         <div class="row">
             <div class="col-lg-3">
                 <ul class="list-group">
-                    <li class="list-group-item d-flex justify-content-between align-items-center active">
-                        Visitors
-                        <span class="badge badge-primary badge-pill">{{ visitor_count }}</span>
-                    </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
-                        <a href="{{ url_for('get_leads', campaign_pk_id=campaign.id)}}">Leads</a>
+                        <a href="{{ url_for('campaign_detail', campaign_pk_id=campaign.id) }}">Visitors</a>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center active">
+                        Leads
+                        <span class="badge badge-primary badge-pill">{{ lead_count }}</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         <a href="{{ url_for('get_emails', campaign_pk_id=campaign.id) }}">Follow Up Emails</a>
@@ -46,30 +46,37 @@
                 </ul>
             </div>
             <div class="col-lg-9">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th scope="col">Visitor Date</th>
-                            <th scope="col">Job Number</th>
-                            <th scope="col">Country Code</th>
-                            <th scope="col">Region</th>
-                            <th scope="col">City</th>
-                            <th scope="col">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for visitor in visitors %}
+
+                {% if results %}
+                    <table class="table table-hover">
+                        <thead>
                             <tr>
-                                <td>{{ visitor.created_date }}</td>
-                                <td>{{ visitor.job_number }}</td>
-                                <td>{{ visitor.country_code }}</td>
-                                <td>{{ visitor.region }}</td>
-                                <td>{{ visitor.city }}</td>
-                                <td>{{ visitor.status }}</td>
+                                <th scope="col">ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Phone</th>
+                                <th scope="col">Credit Range</th>
+                                <th scope="col">Auto Info</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {% for lead in results %}
+                                <tr>
+                                    <td>{{ lead.id }}</td>
+                                    <td>{{ lead.first_name }} {{ lead.last_name }}</td>
+                                    <td>{{ lead.email }}</td>
+                                    <td>{{ lead.home_phone }}</td>
+                                    <td>{{ lead.credit_range }}</td>
+                                    <td>{{ lead.car_year }} {{ lead.car_make }} {{ lead.car_model }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <div class="alert alert-info alert-block">
+                        <h5><i class="fa fa-warning"></i> There are no converted leads for this campaign.</h5>
+                    </div>
+                {% endif %}
             </div>
         </div>
     {% endblock %}

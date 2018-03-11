@@ -1,0 +1,19 @@
+{% extends "_layout.html" %}
+{% block title %}{{ store_name }} &raquo; Reports{% endblock %}
+{% block section_name %}<i class="fa fa-th-list"></i> Select Report{% endblock %}
+
+{% block content %}
+
+    <div class="list-group">
+        <a href="{{ url_for('daily_recap_report') }}" class="list-group-item list-group-item-action active">
+            <i class="fa fa-list-ol"></i> Daily Recap Report
+        </a>
+        <a href="#" class="list-group-item list-group-item-action disabled">
+            <i class="fa fa-list-ol"></i> Campaign Report
+        </a>
+        <a href="#" class="list-group-item list-group-item-action disabled">
+            <i class="fa fa-list-ol"></i> Store Report - All Campaigns
+        </a>
+    </div>
+
+{% endblock %}
