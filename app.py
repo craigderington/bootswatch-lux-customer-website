@@ -5,7 +5,8 @@ from flask_sqlalchemy import SQLAlchemy, Pagination
 from flask_mail import Mail, Message
 from sqlalchemy import text, and_, exc, func
 from database import db_session
-from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor, Lead
+from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor, Lead, StoreDashboard, \
+    CampaignDashboard
 from forms import UserLoginForm, DailyRecapForm
 from celery import Celery
 import config
@@ -18,7 +19,7 @@ import os
 
 
 # debug
-debug = False
+debug = True
 
 # app settings
 app = Flask(__name__)
@@ -174,12 +175,11 @@ def campaigns():
 def campaign_detail(campaign_pk_id):
     """
     The Campaign Detail View
-    :return: databoxes
+    :return: databoxes campaign dashboard
     """
-    visitors = []
-    visitor_count = 0
-    leads = []
-    sends = []
+    dashboard = {}
+    campaign = []
+    errors = {}
 
     try:
         campaign = db_session.query(Campaign).filter(
@@ -187,40 +187,32 @@ def campaign_detail(campaign_pk_id):
             Campaign.id == campaign_pk_id
         ).one()
 
+        if campaign:
+            try:
+                dashboard = db_session.query(CampaignDashboard).filter(
+                    CampaignDashboard.campaign_id == campaign.id,
+                    CampaignDashboard.store_id == current_user.store_id
+                ).one()
+
+            except exc.SQLAlchemyError as err:
+                errors = {'code': 404, 'message': str(err)}
+        else:
+            # this campaign may not belong to this user
+            # redirect and flash a message
+            flash('Unauthorized Access.', category='primary')
+            return redirect(url_for('index'))
+
     except exc.SQLAlchemyError as err:
-        return print(str(err))
-
-    if not campaign:
-
-        # this campaign may not belong to this user
-        # redirect and flash a message
-        flash('Unauthorized Access.', category='primary')
-        return redirect(url_for('index'))
-
-    try:
-        visitors = db_session.query(Visitor).filter(
-            Visitor.campaign_id == campaign.id,
-            Visitor.store_id == current_user.store_id
-        ).order_by(Visitor.created_date.desc()).all()
-
-    except exc.SQLAlchemyError as err:
-        flash(err, category='danger')
-        return redirect(url_for('index'))
-
-    if visitors:
-        visitor_count = len(visitors)
-
-    leads = []
+        errors = {'code': 404, 'message': str(err)}
 
     return render_template(
         'campaign_detail.html',
         current_user=current_user,
         campaign=campaign,
-        visitors=visitors,
-        leads=leads,
+        dashboard=dashboard,
         store_name=get_store_name(current_user.store_id),
         today=get_date(),
-        visitor_count=visitor_count
+        errors=errors
     )
 
 
@@ -542,20 +534,12 @@ def get_dashboard():
     campaign_count = 0
     visitor_count = 0
 
-    campaign_count = db_session.query(Campaign).filter(
-        Campaign.store_id == current_user.store_id,
-        Campaign.status == 'ACTIVE'
-    ).count()
+    dashboard = db_session.query(StoreDashboard).filter(
+        StoreDashboard.store_id == current_user.store_id
+    ).one()
 
-    visitor_count = db_session.query(Visitor).filter(
-        Visitor.store_id == current_user.store_id
-    ).count()
-
-    # create dashboard dict
-    dashboard = {
-        'campaigns': campaign_count,
-        'visitors': visitor_count
-    }
+    if not dashboard:
+        dashboard = {}
 
     # return the dashboard object
     return dashboard

@@ -1,6 +1,6 @@
 from database import Base
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean, Text, Float
 from sqlalchemy.orm import relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 # Define application Bases
@@ -269,3 +269,47 @@ class Contact(Base):
     last_name = Column(String(255), nullable=False)
     email = Column(String(255), unique=True, nullable=False)
     mobile = Column(String(255), unique=True, nullable=False)
+
+
+class StoreDashboard(Base):
+    __tablename__ = 'store_dashboard'
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer, ForeignKey('stores.id'))
+    total_campaigns = Column(Integer, default=0, nullable=False)
+    active_campaigns = Column(Integer, default=0, nullable=False)
+    total_global_visitors = Column(Integer, default=0, nullable=False)
+    total_unique_visitors = Column(Integer, default=0, nullable=False)
+    total_us_visitors = Column(Integer, default=0, nullable=False)
+    total_appends = Column(Integer, default=0, nullable=False)
+    total_sent_to_dealer = Column(Integer, default=0, nullable=False)
+    total_sent_followup_emails = Column(Integer, default=0, nullable=False)
+    total_rvms_sent = Column(Integer, default=0, nullable=False)
+    global_append_rate = Column(Float, default=0.00, nullable=False)
+    unique_append_rate = Column(Float, default=0.00, nullable=False)
+    us_append_rate = Column(Float, default=0.00, nullable=False)
+
+    def __repr__(self):
+        return '{}'.format(self.id)
+
+
+class CampaignDashboard(Base):
+    __tablename__ = 'campaign_dashboard'
+    id = Column(Integer, primary_key=True)
+    store_id = Column(Integer, ForeignKey('stores.id'), nullable=False)
+    store_name = relationship("Store")
+    campaign_id = Column(Integer, ForeignKey('campaigns.id'), nullable=False)
+    campaign_name = relationship("Campaign")
+    total_visitors = Column(Integer, default=0, nullable=True)
+    total_appends = Column(Integer, default=0, nullable=True)
+    total_rtns = Column(Integer, default=0, nullable=True)
+    total_followup_emails = Column(Integer, default=0, nullable=True)
+    total_rvms = Column(Integer, default=0, nullable=True)
+    append_rate = Column(Float, default=0.00, nullable=True)
+    last_update = Column(DateTime, onupdate=datetime.now, nullable=True)
+
+    def __repr__(self):
+        return '{} {} {}'.format(
+            self.store_name,
+            self.campaign_name,
+            str(self.last_update)
+        )
