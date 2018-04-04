@@ -7,23 +7,18 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class User(Base):
-    __tablename__ = 'ab_user'
+    __tablename__ = 'dealer_users'
     id = Column(Integer, primary_key=True)
-    first_name = Column(String(64), nullable=False)
+    first_name = Column(String(64))
     last_name = Column(String(64), nullable=False)
-    username = Column(String(64), unique=True, nullable=False, index=True)
-    password = Column(String(256), nullable=False)
+    username = Column(String(64), unique=True, nullable=False)
+    password = Column(String(256))
     active = Column(Boolean, default=1)
-    email = Column(String(120), unique=True, nullable=False)
-    last_login = Column(DateTime)
-    login_count = Column(Integer)
-    fail_login_count = Column(Integer)
-    created_on = Column(DateTime, default=datetime.now, nullable=True)
-    changed_on = Column(DateTime, default=datetime.now, nullable=True)
-    created_by_fk = Column(Integer)
-    changed_by_fk = Column(Integer)
-    store_id = Column(Integer, ForeignKey('stores.id'), nullable=False)
-    store = relationship('Store')
+    email = Column(String(64), unique=True, nullable=False)
+    last_login = Column(DateTime, onupdate=datetime.now)
+    store_id = Column(Integer, ForeignKey('stores.id'))
+    store_name = relationship("Store")
+    store_emp_id = Column(String(50))
 
     def __init__(self, username, password):
         self.username = username
@@ -222,14 +217,12 @@ class Campaign(Base):
     name = Column(String(255), nullable=False)
     job_number = Column(Integer, unique=True, nullable=False)
     created_date = Column(DateTime, onupdate=datetime.now)
-    created_by = Column(Integer, ForeignKey('ab_user.id'))
     type = Column(Integer, ForeignKey('campaigntypes.id'), nullable=False)
     campaign_type = relationship('CampaignType')
     options = Column(Text(length=1024))
     description = Column(Text(length=1024))
     funded = Column(Boolean, default=0)
     approved = Column(Boolean, default=0)
-    approved_by = Column(Integer, ForeignKey('ab_user.id'))
     status = Column(String(255), nullable=False)
     objective = Column(Text(length=1024))
     frequency = Column(String(255))
