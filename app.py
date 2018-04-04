@@ -18,7 +18,7 @@ import os
 
 
 # debug
-debug = True
+debug = False
 
 # app settings
 app = Flask(__name__)
@@ -116,7 +116,7 @@ def long_task(self):
 
 
 # default routes
-# @app.route('/', methods=['GET'])
+@app.route('/', methods=['GET'])
 @app.route('/index', methods=['GET'])
 @login_required
 def index():
