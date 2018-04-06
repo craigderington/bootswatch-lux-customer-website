@@ -287,6 +287,7 @@ class StoreDashboard(Base):
     global_append_rate = Column(Float, default=0.00, nullable=False)
     unique_append_rate = Column(Float, default=0.00, nullable=False)
     us_append_rate = Column(Float, default=0.00, nullable=False)
+    last_update = Column(DateTime, onupdate=datetime.now, nullable=False)
 
     def __repr__(self):
         return '{}'.format(self.id)

@@ -19,7 +19,7 @@ import os
 
 
 # debug
-debug = True
+debug = False
 
 # app settings
 app = Flask(__name__)
@@ -157,7 +157,7 @@ def campaigns():
         ).count()
 
     except exc.SQLAlchemyError as err:
-        flash(err, category='danger')
+        flash('Database returned error: {}'.format(str(err)), category='danger')
         return redirect(url_for('index'))
 
     return render_template(
@@ -188,14 +188,17 @@ def campaign_detail(campaign_pk_id):
         ).one()
 
         if campaign:
+
+            # get the campaign dashboard
             try:
                 dashboard = db_session.query(CampaignDashboard).filter(
                     CampaignDashboard.campaign_id == campaign.id,
                     CampaignDashboard.store_id == current_user.store_id
-                ).one()
+                ).order_by(CampaignDashboard.last_update.desc()).limit(1).one()
 
             except exc.SQLAlchemyError as err:
-                errors = {'code': 404, 'message': str(err)}
+                flash('Database returned error: {}'.format(str(err)), category='danger')
+                return redirect(url_for('index'))
         else:
             # this campaign may not belong to this user
             # redirect and flash a message
@@ -203,7 +206,8 @@ def campaign_detail(campaign_pk_id):
             return redirect(url_for('index'))
 
     except exc.SQLAlchemyError as err:
-        errors = {'code': 404, 'message': str(err)}
+        flash('Database returned error: {}'.format(str(err)))
+        return redirect(url_for('index'))
 
     return render_template(
         'campaign_detail.html',
@@ -237,7 +241,7 @@ def get_leads(campaign_pk_id):
         ).one()
 
     except exc.SQLAlchemyError as err:
-        flash(err, category='danger')
+        flash('Database returned error: {}'.format(str(err)), category='danger')
         return redirect(url_for('index'))
 
     if campaign:
@@ -533,13 +537,17 @@ def get_dashboard():
     """
     campaign_count = 0
     visitor_count = 0
+    dashboard = None
 
-    dashboard = db_session.query(StoreDashboard).filter(
-        StoreDashboard.store_id == current_user.store_id
-    ).one()
+    try:
+        # get one dashboard, most recent first
+        dashboard = db_session.query(StoreDashboard).filter(
+            StoreDashboard.store_id == current_user.store_id
+        ).order_by(StoreDashboard.last_update.desc()).limit(1).one()
 
-    if not dashboard:
-        dashboard = {}
+    except exc.SQLAlchemyError as err:
+        flash('Database returned error: {}'.format(str(err)), category='danger')
+        return redirect(url_for('index'))
 
     # return the dashboard object
     return dashboard
