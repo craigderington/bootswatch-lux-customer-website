@@ -35,6 +35,7 @@
                 <p class="mb-0">{{ errors.message }}</p>
             </div>
         {% endif %}
+
         <div class="row">
             <div class="col-lg-3">
                 <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
@@ -55,17 +56,6 @@
                 </div>
             </div>
             <div class="col-lg-3">
-                <div class="card text-dark bg-default mb-3" style="max-width: 20rem;">
-                    <div class="card-header">U.S. Append Rate</div>
-                    <div class="card-body">
-                        <h4 class="card-title">U.S. Append Rate</h4>
-                        <p class="card-text"><h1>{{ dashboard.append_rate }} %</h1></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-lg-3">
                 <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
                     <div class="card-header">Realtime Notifications</div>
                     <div class="card-body">
@@ -74,6 +64,8 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="row">
             <div class="col-lg-3">
                 <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
                     <div class="card-header">Follow Up Emails</div>
@@ -88,10 +80,23 @@
                     <div class="card-header">Ringless Voicemail</div>
                     <div class="card-body">
                         <h4 class="card-title">Total RVMs Sent</h4>
-                        <p class="card-text"><h1>{{ dashboard.total_rvms }} %</h1></p>
+                        <p class="card-text"><h1>{{ dashboard.total_rvms }}</h1></p>
                     </div>
                 </div>
             </div>
+            <div class="col-lg-3">
+                <div class="card text-white bg-info mb-3" style="max-width: 20rem;">
+                    <div class="card-header">Export Your Data</div>
+                    <div class="card-body">
+                        <h4 class="card-title">Data Export</h4>
+                        <p class="card-text">Export your digital premier data in CSV format. <br /><br />
+                        <a href="{{ url_for('reports') }}"><i class="fa fa-file-code-o"></i> Click here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-lg-9"><i>Last Updated:  {{ dashboard.last_update|datemdy }}</i></div>
         </div>
     {% endblock %}
 

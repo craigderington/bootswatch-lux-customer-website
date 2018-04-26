@@ -45,7 +45,7 @@
                 <div class="card text-dark bg-light mb-3" style="max-width: 20rem;">
                     <div class="card-header">Global Visitors</div>
                     <div class="card-body">
-                        <h4 class="card-title">Total<br/>Global Visitors</h4>
+                        <h4 class="card-title">Total Global Visitors</h4>
                         <p class="card-text"><h1>{{ dashboard.total_unique_visitors }}</h1></p>
                     </div>
                 </div>
@@ -55,7 +55,7 @@
                     <div class="card-header">Unique Visitors</div>
                     <div class="card-body">
                         <h4 class="card-title">Total Unique U.S. Visitors</h4>
-                        <p class="card-text"><h1>{{ dashboard.us_visitors }}</h1></p>
+                        <p class="card-text"><h1>{{ dashboard.total_us_visitors }}</h1></p>
                     </div>
                 </div>
             </div>
@@ -68,7 +68,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
         <!-- begin: row2 -->
@@ -105,7 +104,8 @@
                     <div class="card-header">Export Your Data</div>
                     <div class="card-body">
                         <h4 class="card-title">Data Export</h4>
-                        <p class="card-text">Export your digital premier data in CSV format for importing to your CRM app.</p>
+                        <p class="card-text">Export your digital premier data in CSV format. <br /><br />
+                        <a href="{{ url_for('reports') }}"><i class="fa fa-file-code-o"></i> Click here</a></p>
                     </div>
                 </div>
             </div>

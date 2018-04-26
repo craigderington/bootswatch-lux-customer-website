@@ -9,6 +9,7 @@ from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor
     CampaignDashboard
 from forms import UserLoginForm, DailyRecapForm
 from celery import Celery
+from io import StringIO
 import config
 import datetime
 import hashlib
@@ -16,10 +17,7 @@ import phonenumbers
 import random
 import time
 import os
-
-
-# debug
-debug = False
+import csv
 
 # app settings
 app = Flask(__name__)
@@ -27,8 +25,6 @@ sslify = SSLify(app)
 
 # app config
 app.secret_key = config.SECRET_KEY
-# app.config['MONGO_SERVER'] = config.MONGO_SERVER
-# app.config['MONGO_DB'] = config.MONGO_DB
 
 # Flask-Mail configuration
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -396,6 +392,7 @@ def daily_recap_report():
     end_date = None
     results_count = 0
     campaign_name = None
+    campaign_id = None
 
     if request.method == 'POST':
         if 'get-daily-recap' in request.form.keys() and form.validate_on_submit():
@@ -436,8 +433,149 @@ def daily_recap_report():
         start_date=start_date,
         end_date=end_date,
         form=form,
-        campaign_name=campaign_name
+        campaign_name=campaign_name,
+        campaign_id=campaign_id
     )
+
+
+@app.route('/reports/daily-recap-report/export', methods=['GET'])
+def export_daily_recap_report():
+    """
+    Export the campaign daily recap report
+    :return: csv
+    """
+    rows = []
+    start_date = None
+    end_date = None
+    campaign_id = None
+
+    if request.method == 'GET':
+
+        if 'campaign_id' in request.args:
+
+            start_date = request.args.get('start_date')
+            end_date = request.args.get('end_date')
+            campaign_id = int(request.args.get('campaign_id'))
+
+            if start_date and end_date:
+                start_date = datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+                end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+                report_date = start_date.strftime('%x')
+
+                if isinstance(campaign_id, int):
+
+                    try:
+
+                        campaign = db_session.query(Campaign).filter(
+                            Campaign.id == campaign_id,
+                            Campaign.store_id == current_user.store_id
+                        ).first()
+
+                        if campaign:
+
+                            # get the daily recap report data for output
+                            # execute the query and set the results
+                            results = Visitor.query.join(AppendedVisitor, Visitor.id == AppendedVisitor.visitor) \
+                                .add_columns(AppendedVisitor.created_date, AppendedVisitor.first_name,
+                                             AppendedVisitor.last_name,
+                                             AppendedVisitor.address1, AppendedVisitor.city, AppendedVisitor.state,
+                                             AppendedVisitor.zip_code, AppendedVisitor.email, AppendedVisitor.cell_phone,
+                                             AppendedVisitor.credit_range, AppendedVisitor.car_year,
+                                             AppendedVisitor.car_make,
+                                             AppendedVisitor.car_model) \
+                                .filter(
+                                Visitor.campaign_id == campaign_id,
+                                Visitor.created_date.between(start_date, end_date)
+                            ).all()
+
+                            if results:
+                                for result in results:
+                                    row = []
+                                    row.append(result.created_date)
+                                    row.append(result.first_name)
+                                    row.append(result.last_name)
+                                    row.append(result.address1)
+                                    row.append(result.city)
+                                    row.append(result.state)
+                                    row.append(result.zip_code)
+                                    row.append(result.email)
+                                    row.append(result.cell_phone)
+                                    row.append(result.credit_range)
+                                    row.append(result.car_year)
+                                    row.append(result.car_make)
+                                    row.append(result.car_model)
+                                    rows.append(row)
+
+                                # set the header row
+                                si = StringIO()
+                                row_heading = []
+                                row_heading.append('Created Date')
+                                row_heading.append('First Name')
+                                row_heading.append('Last Name')
+                                row_heading.append('Address')
+                                row_heading.append('City')
+                                row_heading.append('State')
+                                row_heading.append('ZipCode')
+                                row_heading.append('Email')
+                                row_heading.append('Phone')
+                                row_heading.append('Credit Range')
+                                row_heading.append('Auto Year')
+                                row_heading.append('Auto Make')
+                                row_heading.append('Auto Model')
+
+                                writer = csv.writer(si)
+                                writer.writerow(row_heading)
+
+                                for row in rows:
+                                    writer.writerow(row)
+
+                                # set the csv content and make the response
+                                csv_content = make_response(si.getvalue().strip('\r\n'))
+
+                                # set response headers and name the file
+                                csv_content.headers['Content-Disposition'] = 'attachment; ' \
+                                                                             'filename=Daily-Recap-Report-{}.csv'.format(
+                                    report_date
+                                )
+                                csv_content.headers['Content-Type'] = 'text/csv'
+
+                                # return the csv data file
+                                return csv_content
+
+                            # results is None
+                            else:
+                                # flash a message
+                                flash('No data to export...', category='danger')
+                                return redirect(url_for('daily_recap_report'))
+
+                        # no campaign found, redirect
+                        else:
+                            flash('Campaign {} not found.  Redirecting...', category='danger')
+                            return redirect(url_for('daily_recap_report'))
+
+                    # database exception
+                    except exc.SQLAlchemyError as err:
+                        flash('The database returned an error: {}'.format(str(err)))
+                        return redirect(url_for('index'))
+
+                # campaign is not an integer
+                flash('The campaign ID must be an integer.  Not {}'.format(campaign_id))
+                return redirect(url_for('daily_recap_report'))
+
+            # missing report params
+            else:
+                # flash a message and warn the user
+                flash('Error:  There are required params missing from the query string...',  category='warning')
+                return redirect(url_for('index'))
+
+        # no campaign_id in the request, is the user trying something weird?
+        else:
+            # flash a message
+            flash('Error:  What are you trying to do?  We detected a problem with your request.', category='danger')
+            return redirect(url_for('index'))
+
+    # return something
+    return 'Campaign ID: {}, Start Date: {}'.format(campaign_id, start_date)
 
 
 def send_email(to, subject, **kwargs):
@@ -610,6 +748,6 @@ if __name__ == '__main__':
 
     # start the application
     app.run(
-        debug=debug,
+        debug=config.DEBUG,
         port=port
     )
