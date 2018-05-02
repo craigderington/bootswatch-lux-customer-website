@@ -286,7 +286,8 @@ def get_emails(campaign_pk_id):
         ).one()
 
     except exc.SQLAlchemyError as err:
-        return print(str(err))
+        flash(err, category='danger')
+        return redirect(url_for('index'))
 
     if campaign:
         stmt = ("select v.id, av.first_name, av.last_name, av.email, av.home_phone, l.followup_email_sent_date, "
@@ -524,7 +525,7 @@ def export_daily_recap_report():
                                 row_heading.append('Auto Model')
 
                                 writer = csv.writer(si)
-                                writer.writerow(row_heading)
+                                writer.writerow(unicode(row_heading, 'utf-8'))
 
                                 for row in rows:
                                     writer.writerow(row)
