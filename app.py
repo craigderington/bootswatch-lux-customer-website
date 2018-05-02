@@ -9,7 +9,7 @@ from models import User, Store, Campaign, CampaignType, Visitor, AppendedVisitor
     CampaignDashboard
 from forms import UserLoginForm, DailyRecapForm
 from celery import Celery
-from io import StringIO
+from io import BytesIO
 import config
 import datetime
 import hashlib
@@ -508,30 +508,30 @@ def export_daily_recap_report():
                                     rows.append(row)
 
                                 # set the header row
-                                si = StringIO()
+                                bi = BytesIO()
                                 row_heading = []
-                                row_heading.append(u'Created Date')
-                                row_heading.append(u'First Name')
-                                row_heading.append(u'Last Name')
-                                row_heading.append(u'Address')
-                                row_heading.append(u'City')
-                                row_heading.append(u'State')
-                                row_heading.append(u'ZipCode')
-                                row_heading.append(u'Email')
-                                row_heading.append(u'Phone')
-                                row_heading.append(u'Credit Range')
-                                row_heading.append(u'Auto Year')
-                                row_heading.append(u'Auto Make')
-                                row_heading.append(u'Auto Model')
+                                row_heading.append('Created Date')
+                                row_heading.append('First Name')
+                                row_heading.append('Last Name')
+                                row_heading.append('Address')
+                                row_heading.append('City')
+                                row_heading.append('State')
+                                row_heading.append('ZipCode')
+                                row_heading.append('Email')
+                                row_heading.append('Phone')
+                                row_heading.append('Credit Range')
+                                row_heading.append('Auto Year')
+                                row_heading.append('Auto Make')
+                                row_heading.append('Auto Model')
 
-                                writer = csv.writer(si)
+                                writer = csv.writer(bi)
                                 writer.writerow(row_heading)
 
                                 for row in rows:
                                     writer.writerow(row)
 
                                 # set the csv content and make the response
-                                csv_content = make_response(si.getvalue().strip('\r\n'))
+                                csv_content = make_response(bi.getvalue().strip('\r\n'))
 
                                 # set response headers and name the file
                                 csv_content.headers['Content-Disposition'] = 'attachment; ' \
