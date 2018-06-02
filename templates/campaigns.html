@@ -1,7 +1,7 @@
 {% extends "_layout.html" %}
 {% block title %}{{ store_name }} Campaign List &raquo; All Campaigns{% endblock %}
 
-{% block section_name %}<i class="fa fa-th-list"></i> Your Campaigns{% endblock %}
+{% block section_name %}<i class="fa fa-th-list"></i> Your Tactics{% endblock %}
 
 {% block content %}
 
@@ -9,9 +9,8 @@
         <thead>
             <tr>
                 <th scope="col">Actions</th>
-                <th scope="col">Campaign Type</th>
-                <th scope="col">Campaign Name</th>
-                <th scope="col">Job Number</th>
+                <th scope="col">Tactic</th>
+                <th scope="col">Campaign Job Number</th>
                 <th scope="col">Campaign Dates</th>
                 <th scope="col">Status</th>
             </tr>
@@ -24,7 +23,6 @@
                            title="View Details"><i class="fa fa-plus-circle fa-2x"></i></a></td>
                     <td>{{ campaign.campaign_type }}</td>
                     <td>{{ campaign.name }}</td>
-                    <td>{{ campaign.job_number }}</td>
                     <td>{{ campaign.start_date|datemdy }} to {{ campaign.end_date|datemdy }}</td>
                     <td>{% if campaign.status == 'ACTIVE' %}
                             <span class="badge badge-primary">{{ campaign.status }}</span>

@@ -13,7 +13,7 @@
 <body>
 <div class="navbar navbar-expand-lg fixed-top navbar-dark bg-dark">
     <div class="container">
-        <a href="{{ url_for('index') }}" class="navbar-brand"><i class="fa fa-diamond"></i> EARL DIGITAL <i class="fa fa-plus"></i> </a>
+        <!--<a href="{{ url_for('index') }}" class="navbar-brand">THIS</a>-->
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive"
                 aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -28,7 +28,7 @@
                 </li>
                 <li class="nav-item {% if 'campaigns' in request.path %}active{% endif %}">
                     <a class="nav-link" href="{{ url_for('campaigns') }}">
-                        <i class="fa fa-th-list"></i> Campaigns
+                        <i class="fa fa-th-list"></i> Tactics
                     </a>
                 </li>
                 <li class="nav-item {% if 'reports' in request.path %}active{% endif %}">
@@ -39,16 +39,9 @@
             </ul>
             {% endif %}
             <ul class="nav navbar-nav ml-auto">
-                <li class="nav-item">
-                    <a class="nav-link"
-                       href="http://www.diamondmediasolutions.com/"
-                       target="_blank"><i class="fa fa-diamond"></i>
-                        DMS
-                    </a>
-                </li>
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link"
+                    <a class="nav-link pull-right"
                        href="{{ url_for('logout') }}"
                        target="_self"><i class="fa fa-sign-out"></i> Logout</a>
                 </li>
@@ -98,9 +91,6 @@
                 <ul class="list-unstyled">
                     <hr class="text-default" />
                     <li class="float-lg-right"><a href="#top">Back to top</a></li>
-                    <li><a href="https://www.diamondmediasolutions.com/" target="_blank">Diamond Media Solutions</a></li>
-                    <li><a href="https://www.earlbdc.com/">EARL Digital Plus</a></li>
-                    <li><a href="https://www.diamondmediasolutions.com/digital" target="_blank">Products</a></li>
                     <li><a href="https://www.diamondmediasolutions.com/contact-us" target="_blank">Help</a></li>
                 </ul>
             </div>
