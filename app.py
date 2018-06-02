@@ -40,7 +40,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = config.SQLALCHEMY_TRACK_MODIFICAT
 db = SQLAlchemy(app)
 
 # define our login_manager
-login_manager = LoginManager(app)
+login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "/auth/login"
 login_manager.login_message = "Login required to access this site."
@@ -144,12 +144,14 @@ def campaigns():
     try:
         campaigns = db_session.query(Campaign).filter(
             Campaign.store_id == current_user.store_id,
-            Campaign.status == 'ACTIVE'
+            Campaign.status == 'ACTIVE',
+            Campaign.archived == 0
         ).all()
 
         archived_campaigns = db_session.query(Campaign).filter(
             Campaign.store_id == current_user.store_id,
-            Campaign.status == 'INACTIVE'
+            Campaign.status == 'INACTIVE',
+            Campaign.archived == 1
         ).count()
 
     except exc.SQLAlchemyError as err:
