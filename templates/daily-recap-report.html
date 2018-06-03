@@ -37,7 +37,7 @@
                                         <select name="campaign_id" id="campaign_id" class="form-control">
                                             <option value="">Select Tactic</option>
                                             {% for campaign in campaigns %}
-                                                <option value="{{ campaign.id }}">{{ campaign.id }} - {{ campaign.name }}</option>
+                                                <option value="{{ campaign.id }}">{{ campaign.campaign_type }} - {{ campaign.name }}</option>
                                             {% endfor %}
                                         </select>
                                     </div>
